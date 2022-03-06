@@ -129,11 +129,13 @@ public class Board {
 		Set<Unit> dead = new HashSet<>();
 		
 		for (Set<Configuration> phase : Configuration.phases()) {
+			Map<Unit,Set<Unit>> targets = new HashMap<>();
 			for (Unit shooter : allUnits) {
 				if (phase.contains(shooter.config())) {
-					dead.add(target(shooter)); // FIXME targeting should be optimized
+					targets.put(shooter, targetableBy(shooter));
 				}
 			}
+			dead.addAll(chooseTargets(targets));
 			allUnits.removeAll(dead);
 		}
 		kill(dead);
@@ -204,29 +206,94 @@ public class Board {
 	}
 	
 	/* Choose a target to be shot by the given shooter */
-	private Unit target(Unit shooter) {
-		Tile from = locate(shooter);
+	private Set<Unit> targetableBy(Unit shooter) {
+		Set<Tile> visible = radius(locate(shooter), shooter.config().range);
 		
-		// same tile
-		for (Unit unit : from.units()) {
-			if (!unit.player.equals(shooter.player)) {
-				System.out.println(shooter.player.name + "'s unit targeting " + unit.player.name + "'s unit");
-				return unit; // some randomness if multiple enemy units here?
-			}
-		}
-		// adjacent tiles
-		Set<Unit> targetable = radius(from, shooter.config().range).stream()
+		Set<Unit> targetable = visible.stream()
 				.flatMap(tile -> tile.units().stream())
 				.collect(Collectors.toSet());
-//		System.out.println("Targetable units: "+ targetable.size());
-		for (Unit unit : targetable) {
-			if (!unit.player.equals(shooter.player)) {
-				System.out.println(shooter.player.name + "'s unit targeting " + unit.player.name + "'s unit");
-				return unit; // some randomness if multiple enemy units here?
+		targetable.removeIf(unit -> unit.player.equals(shooter.player));
+		
+		return targetable;
+	}
+	
+	/* This algorithm is imperfect,
+	 * but I think it's guaranteed to shoot the maximum units possible. 
+	 */
+	private Set<Unit> chooseTargets(Map<Unit,Set<Unit>> targetable) {
+		Set<Unit> dead = new HashSet<>();
+		
+		// clean inputs
+		if (targetable == null || targetable.isEmpty()) { return dead; }
+		targetable.remove(null);
+		targetable.values().forEach(set -> set.remove(null));
+		Set<Unit> shootersToRemove = new HashSet<>();
+		targetable.keySet().forEach(shooter -> {
+			if (targetable.get(shooter).isEmpty()) {
+				shootersToRemove.add(shooter);
+			}
+		});
+		shootersToRemove.forEach(unit -> targetable.remove(unit));
+		
+		Set<Unit> hasShot = new HashSet<>();
+		
+		int iters = 0;
+		while (!targetable.isEmpty()) {
+			// can shoot only one target:
+			for (Unit shooter : targetable.keySet()) {
+				Set<Unit> canSee = targetable.get(shooter);
+				if (canSee.size() == 1 && !hasShot.contains(shooter)) {
+					hasShot.add(shooter);
+					dead.addAll(canSee);
+				}
+			}
+			// Can be shot by only one shooter:
+			Map<Unit,Integer> targets = timesTargetable(targetable);
+			for (Unit target : targets.keySet()) {
+				if (targets.get(target) == 1) {
+					for (Unit shooter : targetable.keySet()) {
+						if (!hasShot.contains(shooter) && targetable.get(shooter).contains(target)) {
+							hasShot.add(shooter);
+							dead.add(target);
+						}
+					}
+				}
+			}
+			// "So anyway, I started blasting..."
+			for (Unit shooter : targetable.keySet()) {
+				if (hasShot.contains(shooter)) { continue; }
+				for (Unit target : targetable.get(shooter)) {
+					if (!dead.contains(target)) {
+						hasShot.add(shooter);
+						dead.add(target);
+					}
+				}
+			}
+			
+			hasShot.forEach(unit -> targetable.remove(unit)); // has shot
+			targetable.keySet().forEach(shooter -> {
+				Set<Unit> canSee = targetable.get(shooter);
+				canSee.removeAll(dead);
+				if (canSee.isEmpty())
+					shootersToRemove.add(shooter); // can't shoot anymore
+			});
+			shootersToRemove.forEach(unit -> targetable.remove(unit));
+			if (++iters > 10) {
+				break; // I'm fairly certain this loop terminates, but just in case
 			}
 		}
-		
-		return null;
+		return dead;
+	}
+	
+	/**
+	 * @param targetable mapping of possible shooters to targets they can see
+	 * @return mapping of targets to number of shooters that can see them
+	 */
+	private Map<Unit,Integer> timesTargetable(Map<Unit,Set<Unit>> targetable) {
+		final Map<Unit,Integer> targets = new HashMap<>();
+		targetable.values().stream().forEach(set -> set.forEach(unit -> targets.put(unit, 0)));
+		targetable.values().stream().forEach(set -> set.forEach(unit -> targets.put(unit, targets.get(unit)+1)));
+		return targets;
 	}
 	
 	private boolean isTop(Player player) {

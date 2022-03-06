@@ -23,7 +23,7 @@ public class Game {
 	
 	private static int turn;
 	
-	private static final List<String> STOP_COMMANDS = Arrays.asList(new String[] { "stop", "end", "quit", "kill" });
+	private static final List<String> STOP_COMMANDS = Arrays.asList(new String[] { "stop", "end", "quit", "kill", "exit" });
 	
 	public static void main(String[] args) {
 		
