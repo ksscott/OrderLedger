@@ -7,17 +7,23 @@ import java.util.Set;
 import java.util.HashSet;
 
 public enum Configuration {
-	DEFAULT(0), CANNONS(1), LASERS(0), MISSILES(-1);
+	DEFAULT(1,1,0), CANNONS(1,1,2), SCOUT(2,1,1), MISSILES(1,2,0);
 	
+	public final int speed;
+	public final int range;
 	public final int initiative;
 	
-	Configuration(int init) { this.initiative = init; }
+	Configuration(int speed, int range, int initiative) {
+		this.speed = speed;
+		this.range = range;
+		this.initiative = initiative;
+	}
 	
 	public static List<Set<Configuration>> phases() {
 		List<Set<Configuration>> phases = new ArrayList<>();
 		phases.add(new HashSet<>(Arrays.asList(CANNONS))); // hard coded
-		phases.add(new HashSet<>(Arrays.asList(DEFAULT, LASERS))); // hard coded
-		phases.add(new HashSet<>(Arrays.asList(MISSILES))); // hard coded
+		phases.add(new HashSet<>(Arrays.asList(SCOUT))); // hard coded
+		phases.add(new HashSet<>(Arrays.asList(DEFAULT, MISSILES))); // hard coded
 		return phases;
 	}
 	
@@ -27,8 +33,8 @@ public enum Configuration {
 			return "D";
 		case CANNONS:
 			return "C";
-		case LASERS:
-			return "L";
+		case SCOUT:
+			return "S";
 		case MISSILES:
 			return "M";
 		default:

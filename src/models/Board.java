@@ -27,6 +27,8 @@ public class Board {
 		this.top = top;
 		this.bottom = bottom;
 		initTiles(9, 5);
+		respawnAll(top);
+		respawnAll(bottom);
 	}
 	
 	private void initTiles(int rows, int columns) {
@@ -85,7 +87,7 @@ public class Board {
 	private void respawnAll(Player player) {
 		Set<Unit> units = allUnits();
 		units.removeIf(unit -> !unit.player.equals(player) );
-		System.out.println("Respawning " + (PLAYER_UNITS - units.size()) + " units for " + player.name);
+//		System.out.println("Respawning " + (PLAYER_UNITS - units.size()) + " units for " + player.name);
 		
 		for (int i=0; i < PLAYER_UNITS - units.size(); i++) {
 			spawnTile(player).put(new Unit(player)); // TODO null safety
@@ -161,24 +163,24 @@ public class Board {
 		for (List<Tile> row : tiles) {
 			for (Tile tile : row) {
 				if(tile.removeAll(dead)) { // performant?
-					System.out.println("Removing dead at ("+tile.coord.r+","+tile.coord.c+")");
+//					System.out.println("Removing dead at ("+tile.coord.r+","+tile.coord.c+")");
 				}
 			}
 		}
-		System.out.println("Remaining units: " + allUnits().size());
+//		System.out.println("Remaining units: " + allUnits().size());
 	}
 	
 	private void move(Unit unit, Move order) {
 		Tile from = locate(unit);
-		Tile to = adjacent(from, order.direction);
+		Tile to = goTo(from, order.direction, unit.config().speed);
 		if (from != null && to != null) {
 			from.remove(unit);
 			to.put(unit);
 		}
 	}
 	
-	private Tile adjacent(Tile from, Direction direction) {
-		Coordinate toCoord = from.coord.adjacent(direction);
+	private Tile goTo(Tile from, Direction direction, int distance) {
+		Coordinate toCoord = from.coord.goTo(direction, distance);
 		if (toCoord.r < 0 || toCoord.r >= tiles.size()
 				|| toCoord.c < 0 || toCoord.c >= this.width) {
 			return null; // edge of board
@@ -209,17 +211,18 @@ public class Board {
 		for (Unit unit : from.units()) {
 			if (!unit.player.equals(shooter.player)) {
 				System.out.println(shooter.player.name + "'s unit targeting " + unit.player.name + "'s unit");
-				return unit; // some randomness if multiple enemy units here
+				return unit; // some randomness if multiple enemy units here?
 			}
 		}
 		// adjacent tiles
-		Set<Unit> targetable = radius(from, 1).stream()
+		Set<Unit> targetable = radius(from, shooter.config().range).stream()
 				.flatMap(tile -> tile.units().stream())
 				.collect(Collectors.toSet());
+//		System.out.println("Targetable units: "+ targetable.size());
 		for (Unit unit : targetable) {
 			if (!unit.player.equals(shooter.player)) {
 				System.out.println(shooter.player.name + "'s unit targeting " + unit.player.name + "'s unit");
-				return unit; // some randomness if multiple enemy units here
+				return unit; // some randomness if multiple enemy units here?
 			}
 		}
 		
@@ -289,8 +292,8 @@ public class Board {
 			this.c = column;
 		}
 		
-		public Coordinate adjacent(Direction dir) {
-			return new Coordinate(r+dir.r,c+dir.c);
+		public Coordinate goTo(Direction dir, int distance) {
+			return new Coordinate(r+(distance*dir.r),c+(distance*dir.c));
 		}
 
 		@Override

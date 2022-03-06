@@ -43,12 +43,6 @@ public class Game {
 		System.out.println();
 		
 		board = new Board(top, bottom);
-		board.spawn(8, 1, bottom);
-		board.spawn(8, 2, bottom);
-		board.spawn(8, 3, bottom);
-		board.spawn(0, 1, top);
-		board.spawn(0, 2, top);
-		board.spawn(0, 3, top);
 		
 		turn = 1;
 		
