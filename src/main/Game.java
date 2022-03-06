@@ -20,6 +20,7 @@ public class Game {
 	private static Board board;
 	private static Player bottom;
 	private static Player top;
+	private static Player winner = null;
 	
 	private static int turn;
 	
@@ -46,8 +47,15 @@ public class Game {
 		
 		turn = 1;
 		
-		while(turn(scanner)) {}
+		while(turn(scanner) && winner == null) {}
 		scanner.close();
+		
+		if (winner != null) {
+			System.out.println(board.draw());
+			System.out.println("<<< " +  winner.name + " wins! >>>");
+		}
+		System.out.println();
+		System.out.println("Thanks for playing!");
 	}
 	
 	private static boolean turn(Scanner scanner) {
@@ -83,7 +91,7 @@ public class Game {
 			}
 		}
 		
-		board.applyOrders();
+		winner = board.applyOrders();
 	}
 	
 	private static Order decode(String input) {

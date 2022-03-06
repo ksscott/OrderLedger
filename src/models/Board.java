@@ -54,7 +54,7 @@ public class Board {
 		}
 	}
 	
-	public void applyOrders() {
+	public Player applyOrders() {
 		// for each unit, get that units orders if any, execute them
 		for (Unit unit : allUnits()) {
 			Tile location = locate(unit);
@@ -78,6 +78,25 @@ public class Board {
 		
 		topOrders.turn();
 		bottomOrders.turn();
+		
+		return hasWon();
+	}
+	
+	public Player hasWon() {
+		boolean bottomHasWon = tiles.get(0)
+				.stream().flatMap(tile -> tile.units().stream())
+				.anyMatch(unit -> !isTop(unit.player));
+		boolean topHasWon = tiles.get(length-1)
+				.stream().flatMap(tile -> tile.units().stream())
+				.anyMatch(unit -> isTop(unit.player));
+		
+		if (bottomHasWon == topHasWon) {
+			return null; // tie or no win yet
+		} else if (bottomHasWon) {
+			return bottom;
+		} else {
+			return top;
+		}
 	}
 	
 	public void spawn(int r, int c, Player player) {
