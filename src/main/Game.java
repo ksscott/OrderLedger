@@ -62,11 +62,20 @@ public class Game {
 		draw();
 		System.out.println();
 		System.out.println("((( Turn " + turn++ + " )))");
-		System.out.println("\n" + top.name + "'s orders: (up/down/left/right OR default/cannons/scout/missiles)");
+		System.out.println("Type 'help' for order list");
+		System.out.println("\n" + top.name + "'s orders: ");
 		String topOrders = scanner.nextLine().trim();
+		if (topOrders.toLowerCase().equals("help")) {
+			System.out.println("(up/down/left/right OR default/cannons/scout/missiles)");
+			topOrders = scanner.nextLine().trim();
+		}
 		if (STOP_COMMANDS.contains(topOrders.toLowerCase())) { return false; }
-		System.out.println("\n" + bottom.name + "'s orders: (up/down/left/right OR default/cannons/scout/missiles)");
+		System.out.println("\n" + bottom.name + "'s orders: ");
 		String bottomOrders = scanner.nextLine().trim();
+		if (bottomOrders.toLowerCase().equals("help")) {
+			System.out.println("(up/down/left/right OR default/cannons/scout/missiles)");
+			bottomOrders = scanner.nextLine().trim();
+		}
 		if (STOP_COMMANDS.contains(bottomOrders.toLowerCase())) { return false; }
 		
 		giveOrders(topOrders, bottomOrders);
