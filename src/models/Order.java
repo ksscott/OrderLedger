@@ -1,5 +1,4 @@
 package models;
 
-public interface Order {
-
+public interface Order extends Drawable {
 }

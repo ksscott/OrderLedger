@@ -30,11 +30,11 @@ public class Game {
 		
 		Scanner scanner = new Scanner(System.in);
 		System.out.println();
-		System.out.println("  ( (  --------------  ) )  ");
-		System.out.println("( ( (                  ) ) )");
-		System.out.println("( (      ORDER GAME      ) )");
-		System.out.println("( ( (                  ) ) )");
-		System.out.println("  ( (  --------------  ) )  ");
+		System.out.println("  ( (  ----------------  ) )  ");
+		System.out.println("( ( (                    ) ) )");
+		System.out.println("( (      ORDER LEDGER      ) )");
+		System.out.println("( ( (                    ) ) )");
+		System.out.println("  ( (  ----------------  ) )  ");
 		System.out.println();
 		
 		System.out.println("Top Player:");

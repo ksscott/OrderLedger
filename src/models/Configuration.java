@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-public enum Configuration {
+public enum Configuration implements Drawable {
 	DEFAULT(1,1,0), CANNONS(1,1,2), SCOUT(2,1,1), MISSILES(1,2,0);
 	
 	public final int speed;
@@ -27,6 +27,7 @@ public enum Configuration {
 		return phases;
 	}
 	
+	@Override
 	public String draw() {
 		switch (this) {
 		case DEFAULT:

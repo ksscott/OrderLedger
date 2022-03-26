@@ -2,7 +2,7 @@ package models;
 
 import static models.Configuration.*;
 
-public class Unit {
+public class Unit implements Drawable {
 	public final Player player;
 	private Configuration config;
 	
@@ -20,9 +20,8 @@ public class Unit {
 		this.config = DEFAULT;
 	}
 	
-	public Configuration config() { return this.config; } // wcgw?
+	public Configuration config() { return this.config; }
 	
-	public String draw() {
-		return config.draw();
-	}
+	@Override
+	public String draw() { return config.draw(); }
 }

@@ -1,7 +1,6 @@
 package models;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import models.Move.Direction;
+import models.Tile.Coordinate;
 
 public class Board {
 	
@@ -17,9 +17,9 @@ public class Board {
 	
 	private int length;
 	private int width;
+	private List<Row> tiles;
 	private Player top;
 	private Player bottom;
-	private List<List<Tile>> tiles;
 	private OrderField topOrders;
 	private OrderField bottomOrders;
 	
@@ -37,11 +37,11 @@ public class Board {
 		this.topOrders = new OrderField();
 		this.bottomOrders = new OrderField();
 		tiles = new ArrayList<>();
-		for (int r = 0; r < rows; r++) {
-			List<Tile> list = new ArrayList<>();
-			tiles.add(list);
-			for (int c = 0; c < columns; c++) {
-				list.add(new Tile(r, c));
+		for (int r = 0; r < length; r++) {
+			Row row = new Row();
+			tiles.add(row);
+			for (int c = 0; c < width; c++) {
+				row.add(new Tile(r, c));
 			}
 		}
 	}
@@ -109,7 +109,10 @@ public class Board {
 //		System.out.println("Respawning " + (PLAYER_UNITS - units.size()) + " units for " + player.name);
 		
 		for (int i=0; i < PLAYER_UNITS - units.size(); i++) {
-			spawnTile(player).put(new Unit(player)); // TODO null safety
+			Tile spawnTile = spawnTile(player);
+			if (spawnTile != null) {
+				spawnTile.put(new Unit(player));
+			}
 		}
 	}
 	
@@ -132,6 +135,7 @@ public class Board {
 		return null;
 	}
 	
+	/** Execute the given Order for the given Unit */
 	private void order(Unit unit, Order order) {
 		if (order instanceof Reconfigure) {
 			unit.order((Reconfigure) order);
@@ -142,7 +146,7 @@ public class Board {
 		}
 	}
 	
-	// units shoot each other and are removed from the board
+	/** Units shoot each other and are removed from the board */
 	private void combat() {
 		Set<Unit> allUnits = allUnits();
 		Set<Unit> dead = new HashSet<>();
@@ -161,11 +165,20 @@ public class Board {
 	}
 	
 	private Tile locate(Unit unit) {
-		for (List<Tile> row : tiles)
+		for (Row row : tiles)
 			for (Tile tile : row)
 				if (tile.has(unit))
 					return tile;
 		return null;
+	}
+	
+	private Tile tile(Coordinate coord) {
+		if (coord.r < 0 || coord.r >= tiles.size()
+				|| coord.c < 0 || coord.c >= this.width) {
+			return null; // edge of board
+		}
+		List<Tile> row = tiles.get(coord.r);
+		return row.get(coord.c);
 	}
 	
 	public Set<Unit> allUnits() {
@@ -193,7 +206,7 @@ public class Board {
 	
 	private void move(Unit unit, Move order) {
 		Tile from = locate(unit);
-		Tile to = goTo(from, order.direction, unit.config().speed);
+		Tile to = goToward(from, order.direction, unit.config().speed);
 		if (from != null && to != null) {
 			from.remove(unit);
 			to.put(unit);
@@ -201,13 +214,22 @@ public class Board {
 	}
 	
 	private Tile goTo(Tile from, Direction direction, int distance) {
-		Coordinate toCoord = from.coord.goTo(direction, distance);
-		if (toCoord.r < 0 || toCoord.r >= tiles.size()
-				|| toCoord.c < 0 || toCoord.c >= this.width) {
-			return null; // edge of board
+		return tile(from.coord.goTo(direction, distance));
+	}
+	
+	private Tile goToward(Tile from, Direction direction, int distance) {
+		Tile landing = from;
+		for (Coordinate toCoord : from.coord.path(direction, distance)) {
+			Tile candidate = tile(toCoord);
+			if (candidate == null) {
+				break; // off board, stop
+			} else if (false) { // handle "tile occupied" or similar
+				break;
+			} else {
+				landing = candidate; // step forward
+			}
 		}
-		List<Tile> row = tiles.get(toCoord.r);
-		return row.get(toCoord.c);
+		return landing;
 	}
 	
 	/* Square grid logic */
@@ -327,87 +349,31 @@ public class Board {
 	
 	public String draw() {
 		StringBuilder builder = new StringBuilder();
-		for (List<Tile> row : tiles) {
+		for (int i = 0; i < length; i++) {
+			List<Tile> row = tiles.get(i);
+			
 			builder.append("\n");
+			if (i % 3 == 1) {
+				builder.append(topOrders.draw(row.get(0).coord, true));
+			} else {
+				builder.append("   ");
+			}
+			builder.append(" | ");
 			for (Tile tile : row) {
 				builder.append(tile.draw());
+			}
+			builder.append("   | ");
+			if (i % 3 == 1) {
+				builder.append(bottomOrders.draw(row.get(0).coord, false));
+			} else {
+				builder.append("   ");
 			}
 			builder.append("\n");
 		}
 		return builder.toString();
 	}
 
-	public static class Tile {
-		public final Coordinate coord;
-		private Set<Unit> units;
-		
-		public Tile(int row, int column) {
-			this.coord = new Coordinate(row, column);
-			this.units = new HashSet<>();
-		}
-		
-		public Set<Unit> units() { return units; } // wcgw?
-		
-		public boolean has(Unit unit) { return units.contains(unit); }
-		
-		public boolean put(Unit unit) { return units.add(unit); }
-		
-		public boolean remove(Unit unit) { return units.remove(unit); }
-		
-		public boolean removeAll(Collection<Unit> units) { return this.units.removeAll(units); }
-		
-		public String draw() {
-			String icon = "";
-			if (units.isEmpty()) {				
-				icon = "-";
-			} else {
-				for (Unit unit : units) {
-					icon += unit.draw();
-				}
-			}
-			return String.format("%1$" + 3 + "s", icon);
-		}
-	}
-	
-	private static class Coordinate {
-		public final int r;
-		public final int c;
-		
-		public Coordinate(int row, int column) {
-			this.r = row;
-			this.c = column;
-		}
-		
-		public Coordinate goTo(Direction dir, int distance) {
-			return new Coordinate(r+(distance*dir.r),c+(distance*dir.c));
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + c;
-			result = prime * result + r;
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Coordinate other = (Coordinate) obj;
-			if (c != other.c)
-				return false;
-			if (r != other.r)
-				return false;
-			return true;
-		}
-	}
-	
+	/** A divided space containing Orders for Units */
 	private class OrderField {
 		private Map<Unit,Order> pending;
 		private Map<Unit,Order> near;
@@ -422,7 +388,7 @@ public class Board {
 		}
 		
 		public Order get(Unit unit, Coordinate coord) {
-			Map<Unit,Order> orders = region(coord, isTop(unit.player));
+			Map<Unit,Order> orders = region(coord.r, isTop(unit.player));
 			return orders.get(unit);
 		}
 		
@@ -432,7 +398,7 @@ public class Board {
 		}
 		
 		public void remove(Unit unit, Order order, Coordinate coord) {
-			Map<Unit,Order> orders = region(coord, isTop(unit.player));
+			Map<Unit,Order> orders = region(coord.r, isTop(unit.player));
 			orders.remove(unit, order);
 		}
 		
@@ -443,14 +409,32 @@ public class Board {
 			pending = new HashMap<>();
 		}
 		
-		private Map<Unit,Order> region(Coordinate coord, boolean top) {
-			if (coord.r < 0) {
+		/** Draw the orders for a player that apply to the given coordinate */
+		public String draw(Coordinate coord, boolean top) { return draw(coord.r, top); }
+		
+		/** Draw the orders for a player that apply to the given coordinate */
+		public String draw(int row, boolean top) {
+			return drawRegion(region(row, top));
+		}
+		
+		private String drawRegion(Map<Unit,Order> region) {
+			String icon = "";
+			for (Order order : region.values()) {
+				if (order != null) {
+					icon += order.draw();
+				}
+			}
+			return String.format("%1$" + 3 + "s", icon);
+		}
+		
+		private Map<Unit,Order> region(int row, boolean top) {
+			if (row < 0) {
 				throw new RuntimeException("coordinates off the top of the board");
-			} else if (coord.r < 3) { // FIXME
+			} else if (row < (Board.this.length/3)) { // FIXME
 				return top ? near : far;
-			} else if (coord.r < 6) { // FIXME
+			} else if (row < (2*Board.this.length/3)) { // FIXME
 				return middle;
-			} else if (coord.r < Board.this.length) {
+			} else if (row < Board.this.length) {
 				return top ? far : near;
 			} else {
 				throw new RuntimeException("coordinates off the bottom of the board");

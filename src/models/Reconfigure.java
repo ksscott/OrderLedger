@@ -7,7 +7,6 @@ public class Reconfigure implements Order {
 		this.config = config;
 	}
 	
-	public String toString() {
-		return "Recon-" + config.draw();
-	}
+	@Override
+	public String draw() { return config.draw(); }
 }
