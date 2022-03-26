@@ -62,10 +62,10 @@ public class Game {
 		draw();
 		System.out.println();
 		System.out.println("((( Turn " + turn++ + " )))");
-		System.out.println("\n" + top.name + "'s orders:");
+		System.out.println("\n" + top.name + "'s orders: (up/down/left/right OR default/cannons/scout/missiles)");
 		String topOrders = scanner.nextLine().trim();
 		if (STOP_COMMANDS.contains(topOrders.toLowerCase())) { return false; }
-		System.out.println("\n" + bottom.name + "'s orders:");
+		System.out.println("\n" + bottom.name + "'s orders: (up/down/left/right OR default/cannons/scout/missiles)");
 		String bottomOrders = scanner.nextLine().trim();
 		if (STOP_COMMANDS.contains(bottomOrders.toLowerCase())) { return false; }
 		
