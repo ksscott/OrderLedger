@@ -8,7 +8,7 @@ public class Move implements Order {
 	}
 	
 	public enum Direction implements Drawable {
-		UP(-1,0), DOWN(1,0), LEFT(0,-1), RIGHT(0,1);
+		UP(-1,0), DOWN(1,0), LEFT(0,-1), RIGHT(0,1), NONE(0,0);
 		
 		public final int r;
 		public final int c;
@@ -29,6 +29,8 @@ public class Move implements Order {
 				return "<";
 			case RIGHT:
 				return ">";
+			case NONE:
+				return "#";
 			default:
 				return "?";
 			}

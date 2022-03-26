@@ -3,12 +3,14 @@ package models;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import models.Move.Direction;
 
-public class Tile implements Drawable {
+public class Tile implements Drawable, Iterable<Unit> {
 	public final Coordinate coord;
 	private Set<Unit> units;
 	
@@ -31,13 +33,13 @@ public class Tile implements Drawable {
 	public String draw() {
 		String icon = "";
 		if (units.isEmpty()) {				
-			icon = "-";
+			icon = " - ";
 		} else {
 			for (Unit unit : units) {
 				icon += unit.draw();
 			}
 		}
-		return String.format("%1$" + 3 + "s", icon);
+		return String.format("%1$" + 4 + "s", icon); // unit draw width + 1
 	}
 	
 	public static class Coordinate {
@@ -86,5 +88,14 @@ public class Tile implements Drawable {
 				return false;
 			return true;
 		}
+	}
+
+	@Override
+	public Iterator<Unit> iterator() {
+		return units.iterator();
+	}
+	
+	public Stream<Unit> stream() {
+		return units.stream();
 	}
 }

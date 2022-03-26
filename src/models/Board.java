@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import models.Move.Direction;
@@ -13,13 +15,13 @@ import models.Tile.Coordinate;
 
 public class Board {
 	
-	private static final int PLAYER_UNITS = 3;
+	private static final int UNITS_PER_PLAYER = 3;
 	
 	private int length;
 	private int width;
-	private List<Row> tiles;
-	private Player top;
-	private Player bottom;
+	private List<Row> tileRows;
+	private Player top; // player one
+	private Player bottom; // player two
 	private OrderField topOrders;
 	private OrderField bottomOrders;
 	
@@ -36,10 +38,10 @@ public class Board {
 		this.width = columns;
 		this.topOrders = new OrderField();
 		this.bottomOrders = new OrderField();
-		tiles = new ArrayList<>();
+		tileRows = new ArrayList<>();
 		for (int r = 0; r < length; r++) {
 			Row row = new Row();
-			tiles.add(row);
+			tileRows.add(row);
 			for (int c = 0; c < width; c++) {
 				row.add(new Tile(r, c));
 			}
@@ -47,10 +49,20 @@ public class Board {
 	}
 	
 	public void issueOrder(Unit unit, Order order) {
+		if (order == null) { return; }
 		if (isTop(unit.player)) {
 			topOrders.issue(unit, order);
 		} else {
 			bottomOrders.issue(unit, order);
+		}
+	}
+	
+	public void issueOrders(Player player, List<Order> orders) {
+		for (Unit unit : playerUnits(player)) {
+			int idx = unit.index - 1;
+			if (idx >= 0 && idx < orders.size()) {
+				issueOrder(unit, orders.get(idx));
+			}
 		}
 	}
 	
@@ -83,10 +95,10 @@ public class Board {
 	}
 	
 	public Player hasWon() {
-		boolean bottomHasWon = tiles.get(0)
+		boolean bottomHasWon = tileRows.get(0)
 				.stream().flatMap(tile -> tile.units().stream())
 				.anyMatch(unit -> !isTop(unit.player));
-		boolean topHasWon = tiles.get(length-1)
+		boolean topHasWon = tileRows.get(length-1)
 				.stream().flatMap(tile -> tile.units().stream())
 				.anyMatch(unit -> isTop(unit.player));
 		
@@ -99,25 +111,28 @@ public class Board {
 		}
 	}
 	
-	public void spawn(int r, int c, Player player) {
-		tiles.get(r).get(c).put(new Unit(player)); // TODO sanitize inputs
-	}
-	
 	private void respawnAll(Player player) {
-		Set<Unit> units = allUnits();
-		units.removeIf(unit -> !unit.player.equals(player) );
+		Set<Unit> units = playerUnits(player);
 //		System.out.println("Respawning " + (PLAYER_UNITS - units.size()) + " units for " + player.name);
 		
-		for (int i=0; i < PLAYER_UNITS - units.size(); i++) {
-			Tile spawnTile = spawnTile(player);
-			if (spawnTile != null) {
-				spawnTile.put(new Unit(player));
+		indexloop:
+		for (int i=1; i <= UNITS_PER_PLAYER; i++) {
+			for (Unit existing : units) {
+				if (existing.index == i) { continue indexloop; }
 			}
+			spawn(player, i);
+		}
+	}
+	
+	private void spawn(Player player, int index) {
+		Tile tile = spawnTile(player);
+		if (tile != null) {
+			tile.put(new Unit(player, index));
 		}
 	}
 	
 	private Tile spawnTile(Player player) {
-		List<Tile> backRow = tiles.get(isTop(player) ? 0 : length-1);
+		List<Tile> backRow = tileRows.get(isTop(player) ? 0 : length-1);
 		int center = width / 2;
 		
 		Tile tile = backRow.get(center);
@@ -165,7 +180,7 @@ public class Board {
 	}
 	
 	private Tile locate(Unit unit) {
-		for (Row row : tiles)
+		for (Row row : tileRows)
 			for (Tile tile : row)
 				if (tile.has(unit))
 					return tile;
@@ -173,28 +188,31 @@ public class Board {
 	}
 	
 	private Tile tile(Coordinate coord) {
-		if (coord.r < 0 || coord.r >= tiles.size()
+		if (coord.r < 0 || coord.r >= tileRows.size()
 				|| coord.c < 0 || coord.c >= this.width) {
 			return null; // edge of board
 		}
-		List<Tile> row = tiles.get(coord.r);
+		List<Tile> row = tileRows.get(coord.r);
 		return row.get(coord.c);
 	}
 	
-	public Set<Unit> allUnits() {
-		Set<Unit> all = new HashSet<>();
-		for (List<Tile> row : tiles) {
-			for (Tile tile : row) {
-				all.addAll(tile.units());
-			}
-		}
-		return all;
+	/** @return Set of Units that match the given check */
+	private Set<Unit> allUnits(Predicate<Unit> check) {
+		return tileRows.stream()
+			.flatMap(Row::stream)
+			.flatMap(Tile::stream)
+			.filter(check)
+			.collect(Collectors.toSet());
 	}
+	
+	private Set<Unit> allUnits() { return allUnits(unit -> true); }
+	
+	private Set<Unit> playerUnits(Player player) { return allUnits(u -> u.player.equals(player)); }
 	
 	private void kill(Set<Unit> dead) {
 		dead.remove(null);
 		if (dead.isEmpty()) { return; }
-		for (List<Tile> row : tiles) {
+		for (List<Tile> row : tileRows) {
 			for (Tile tile : row) {
 				if(tile.removeAll(dead)) { // performant?
 //					System.out.println("Removing dead at ("+tile.coord.r+","+tile.coord.c+")");
@@ -235,7 +253,7 @@ public class Board {
 	/* Square grid logic */
 	private Set<Tile> radius(Tile from, int radius) {
 		Set<Tile> adjacent = new HashSet<>();
-		for (List<Tile> row : this.tiles) {
+		for (Row row : tileRows) {
 			for (Tile tile : row) {
 				if (Math.abs(tile.coord.c - from.coord.c) <= radius
 						&& Math.abs(tile.coord.r - from.coord.r) <= radius) {
@@ -350,13 +368,13 @@ public class Board {
 	public String draw() {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < length; i++) {
-			List<Tile> row = tiles.get(i);
+			List<Tile> row = tileRows.get(i);
 			
 			builder.append("\n");
 			if (i % 3 == 1) {
 				builder.append(topOrders.draw(row.get(0).coord, true));
 			} else {
-				builder.append("   ");
+				builder.append("         ");
 			}
 			builder.append(" | ");
 			for (Tile tile : row) {
@@ -366,7 +384,7 @@ public class Board {
 			if (i % 3 == 1) {
 				builder.append(bottomOrders.draw(row.get(0).coord, false));
 			} else {
-				builder.append("   ");
+				builder.append("         ");
 			}
 			builder.append("\n");
 		}
@@ -413,18 +431,23 @@ public class Board {
 		public String draw(Coordinate coord, boolean top) { return draw(coord.r, top); }
 		
 		/** Draw the orders for a player that apply to the given coordinate */
-		public String draw(int row, boolean top) {
-			return drawRegion(region(row, top));
-		}
+		public String draw(int row, boolean top) { return drawRegion(region(row, top)); }
 		
 		private String drawRegion(Map<Unit,Order> region) {
-			String icon = "";
-			for (Order order : region.values()) {
-				if (order != null) {
-					icon += order.draw();
+			final StringBuilder icon = new StringBuilder();
+			Set<Unit> units = region.keySet();
+			for (int i=1; i<=UNITS_PER_PLAYER; i++) {
+				int idx = i;
+				// FIXME handle duplicate indices: 
+				Optional<Unit> unit = units.stream().filter(u -> u.index == idx).findAny();
+				if (unit.isPresent()) {
+					Order order = region.get(unit.get());
+					if (order != null) {
+						icon.append(i + order.draw() + " "); // 3 characters wide
+					}
 				}
 			}
-			return String.format("%1$" + 3 + "s", icon);
+			return String.format("%1$" + 3*UNITS_PER_PLAYER + "s", icon.toString());
 		}
 		
 		private Map<Unit,Order> region(int row, boolean top) {
