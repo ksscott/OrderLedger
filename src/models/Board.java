@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import models.Move.Direction;
 import models.Tile.Coordinate;
 
-public class Board {
+public class Board implements Drawable {
 	
 	private static final int UNITS_PER_PLAYER = 3;
 	
@@ -48,7 +48,7 @@ public class Board {
 		}
 	}
 	
-	public void issueOrder(Unit unit, Order order) {
+	private void issueOrder(Unit unit, Order order) {
 		if (order == null) { return; }
 		if (isTop(unit.player)) {
 			topOrders.issue(unit, order);
@@ -365,6 +365,7 @@ public class Board {
 		}
 	}
 	
+	@Override
 	public String draw() {
 		StringBuilder builder = new StringBuilder();
 		for (int i = 0; i < length; i++) {
