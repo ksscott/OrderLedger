@@ -41,6 +41,10 @@ public class Unit implements Drawable, Comparable<Unit> {
 
 	@Override
 	public int compareTo(Unit o) {
-		return index - o.index;
+		if (index != o.index) {
+			return index - o.index;
+		} else {
+			return player.playerIndex - o.player.playerIndex;
+		}
 	}
 }

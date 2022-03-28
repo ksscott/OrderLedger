@@ -1,6 +1,8 @@
 package models;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,7 +12,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import models.Move.Direction;
 import models.Tile.Coordinate;
 
 public class Board implements Drawable {
@@ -22,12 +23,12 @@ public class Board implements Drawable {
 	private List<Row> tileRows;
 	private Player top; // player one
 	private Player bottom; // player two
-	private OrderField topOrders;
-	private OrderField bottomOrders;
+	private OrderFields orders;
 	
 	public Board(Player top, Player bottom) {
 		this.top = top;
 		this.bottom = bottom;
+		this.orders = new OrderFields(top, bottom);
 		initTiles(9, 5);
 		respawnAll(top);
 		respawnAll(bottom);
@@ -36,8 +37,7 @@ public class Board implements Drawable {
 	private void initTiles(int rows, int columns) {
 		this.length = rows;
 		this.width = columns;
-		this.topOrders = new OrderField();
-		this.bottomOrders = new OrderField();
+		
 		tileRows = new ArrayList<>();
 		for (int r = 0; r < length; r++) {
 			Row row = new Row();
@@ -48,48 +48,26 @@ public class Board implements Drawable {
 		}
 	}
 	
-	private void issueOrder(Unit unit, Order order) {
-		if (order == null) { return; }
-		if (isTop(unit.player)) {
-			topOrders.issue(unit, order);
-		} else {
-			bottomOrders.issue(unit, order);
-		}
-	}
-	
 	public void issueOrders(Player player, List<Order> orders) {
 		for (Unit unit : playerUnits(player)) {
 			int idx = unit.index - 1;
 			if (idx >= 0 && idx < orders.size()) {
-				issueOrder(unit, orders.get(idx));
+				this.orders.issueOrder(unit, orders.get(idx));
 			}
 		}
 	}
 	
 	public Player applyOrders() {
-		// for each unit, get that units orders if any, execute them
-		for (Unit unit : allUnits()) {
-			Tile location = locate(unit);
-			OrderField orders;
-			if (isTop(unit.player)) {
-				orders = topOrders;
-			} else {
-				orders = bottomOrders;
-			}
-			Order order = orders.get(unit, location.coord);
-			if (order != null) {
-				order(unit, order);
-				orders.remove(unit, order, location.coord);
-			}
-		}
+		reconfigureAll();
+		
+		moveAll();
 		
 		combat();
 		
 		respawnAll(top);
 		respawnAll(bottom);
 		
-		topOrders.turn();
-		bottomOrders.turn();
+		orders.turn();
 		
 		return hasWon();
 	}
@@ -150,17 +128,110 @@ public class Board implements Drawable {
 		return null;
 	}
 	
-	/** Execute the given Order for the given Unit */
-	private void order(Unit unit, Order order) {
-		if (order instanceof Reconfigure) {
-			unit.order((Reconfigure) order);
-		} else if (order instanceof Move) {
-			move(unit, (Move) order);
-		} else {
-			throw new RuntimeException("unrecognized order given: " + order);
+	/* Units receive all orders here, but only act on the Reconfigure orders */
+	private void reconfigureAll() {
+		Map<Unit,Order> allOrders =  unitOrders(allUnits());
+		for (Unit unit : allOrders.keySet()) {
+			Order order = allOrders.get(unit);
+			if (order instanceof Reconfigure) {
+				unit.order(allOrders.get(unit));
+				orders.remove(unit, order, locate(unit).coord);
+			}
 		}
 	}
 	
+	/** Units move around the board */
+	private void moveAll() {
+		List<Unit> allUnits = new ArrayList<>(allUnits());
+		Collections.sort(allUnits); // priority is important
+		Map<Unit,Order> allOrders =  unitOrders(allUnits);
+		Map<Unit,List<Coordinate>> unitPaths = unitPaths(allOrders);
+		
+		// remove orders from field
+		for (Unit unit : allOrders.keySet()) {
+			Order order = allOrders.get(unit);
+			if (order instanceof Move) {
+				orders.remove(unit, order, locate(unit).coord);
+			}
+		}
+		
+		// iteratively move all units
+		boolean changes = false;
+		do {
+			changes = false;
+			for (Unit unit : allUnits) {
+				List<Coordinate> path = unitPaths.get(unit);
+				if (path == null) { continue; }
+				Tile from = locate(unit); // should equal tile(path.get(0))
+				Tile oneAhead = tile(path.get(1)); // TODO indexing safety
+				
+				// attempt to move 1 along the path
+				// (fail if bump into walls or same-player unit)
+				if (oneAhead == null) {
+					break; // off board, stop
+				} else if (!oneAhead.isEmpty() && !oneAhead.equals(from)) {
+					System.out.println("Tile occupied: " + oneAhead.coord);
+					break;  // tile occupied
+				} else {
+					move(unit, from, oneAhead); // step forward
+					path.remove(0);
+					if (path.size() == 1) { // done moving
+						unitPaths.remove(unit);
+					}
+					changes = true;
+				}
+			}
+		} while (changes);
+	}
+	
+	private void move(Unit unit, Tile from, Tile to) {
+		if (from != null && to != null) {
+			from.remove(unit);
+			to.put(unit);
+		}
+	}
+
+//	private Tile goToward(Tile from, Direction direction, int distance) {
+//		Tile landing = from;
+//		for (Coordinate toCoord : from.coord.path(direction, distance)) {
+//			Tile candidate = tile(toCoord);
+//			if (candidate == null) {
+//				break; // off board, stop
+//			} else if (!candidate.isEmpty() && !candidate.equals(from)) {
+//				System.out.println("Tile occupied: " + candidate.coord);
+//				break;  // tile occupied
+//			} else {
+//				landing = candidate; // step forward
+//			}
+//		}
+//		return landing;
+//	}
+	
+	private Map<Unit,Order> unitOrders(Collection<Unit> units) {
+		Map<Unit,Order> allOrders = new HashMap<>();
+		for (Unit unit : units) {
+			Coordinate coord = locate(unit).coord;
+			Order order = orders.get(unit.player).get(unit, coord);
+			if (order != null) {
+				allOrders.put(unit, order);
+			}
+		}
+		return allOrders;
+	}
+	
+	private Map<Unit,List<Coordinate>> unitPaths(Map<Unit,Order> orders) {
+		Map<Unit,List<Coordinate>> unitPaths = new HashMap<>();
+		for (Unit unit : orders.keySet()) {
+			Order order = orders.get(unit);
+			if (order instanceof Move) {
+				Coordinate from = locate(unit).coord;
+				List<Coordinate> path = from.path(((Move) order).direction, unit.config().speed);
+				unitPaths.put(unit, path);
+			}
+		}
+		return unitPaths;
+	}
+
 	/** Units shoot each other and are removed from the board */
 	private void combat() {
 		Set<Unit> allUnits = allUnits();
@@ -220,34 +291,6 @@ public class Board implements Drawable {
 			}
 		}
 //		System.out.println("Remaining units: " + allUnits().size());
-	}
-	
-	private void move(Unit unit, Move order) {
-		Tile from = locate(unit);
-		Tile to = goToward(from, order.direction, unit.config().speed);
-		if (from != null && to != null) {
-			from.remove(unit);
-			to.put(unit);
-		}
-	}
-	
-	private Tile goTo(Tile from, Direction direction, int distance) {
-		return tile(from.coord.goTo(direction, distance));
-	}
-	
-	private Tile goToward(Tile from, Direction direction, int distance) {
-		Tile landing = from;
-		for (Coordinate toCoord : from.coord.path(direction, distance)) {
-			Tile candidate = tile(toCoord);
-			if (candidate == null) {
-				break; // off board, stop
-			} else if (false) { // handle "tile occupied" or similar
-				break;
-			} else {
-				landing = candidate; // step forward
-			}
-		}
-		return landing;
 	}
 	
 	/* Square grid logic */
@@ -373,9 +416,9 @@ public class Board implements Drawable {
 			
 			builder.append("\n");
 			if (i % 3 == 1) {
-				builder.append(topOrders.draw(row.get(0).coord, true));
+				builder.append(orders.get(top).draw(row.get(0).coord, true));
 			} else {
-				builder.append("         ");
+				appendSpaces(builder, 9);
 			}
 			builder.append(" | ");
 			for (Tile tile : row) {
@@ -383,13 +426,48 @@ public class Board implements Drawable {
 			}
 			builder.append("   | ");
 			if (i % 3 == 1) {
-				builder.append(bottomOrders.draw(row.get(0).coord, false));
+				builder.append(orders.get(bottom).draw(row.get(0).coord, false));
 			} else {
-				builder.append("         ");
+				appendSpaces(builder, 9);
 			}
 			builder.append("\n");
+			appendSpaces(builder, 9);
+			builder.append(" | ");
+			appendSpaces(builder, 20);
+			builder.append("   | ");
+			appendSpaces(builder, 9);
 		}
 		return builder.toString();
+	}
+	
+	private static StringBuilder appendSpaces(StringBuilder builder, int number) {
+		for (int i=0; i<number; i++) {
+			builder.append(" ");
+		}
+		return builder;
+	}
+	
+	private class OrderFields {
+		Map<Player,OrderField> playerOrders;
+		
+		public OrderFields(Player topPlayer, Player bottomPlayer) {
+			this.playerOrders = new HashMap<>();
+			playerOrders.put(topPlayer, new OrderField());
+			playerOrders.put(bottomPlayer, new OrderField());
+		}
+		
+		public OrderField get(Player player) { return playerOrders.get(player); }
+		
+		public void issueOrder(Unit unit, Order order) {
+			if (unit == null || order == null) { return; }
+			playerOrders.get(unit.player).issue(unit, order);
+		}
+		
+		public void remove(Unit unit, Order order, Coordinate coord) {
+			get(unit.player).remove(unit, order, coord);
+		}
+		
+		public void turn() { playerOrders.values().forEach(of -> of.turn()); }
 	}
 
 	/** A divided space containing Orders for Units */

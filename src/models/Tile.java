@@ -29,6 +29,8 @@ public class Tile implements Drawable, Iterable<Unit> {
 	
 	public boolean removeAll(Collection<Unit> units) { return this.units.removeAll(units); }
 	
+	public boolean isEmpty() { return this.units.isEmpty(); }
+	
 	@Override
 	public String draw() {
 		String icon = "";
@@ -62,6 +64,11 @@ public class Tile implements Drawable, Iterable<Unit> {
 				path.add(goTo(dir, i));
 			}
 			return path;
+		}
+		
+		@Override
+		public String toString() {
+			return "Coord(" + r + "," + c + ")";
 		}
 		
 		@Override
