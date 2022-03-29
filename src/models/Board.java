@@ -298,8 +298,7 @@ public class Board implements Drawable {
 		Set<Tile> adjacent = new HashSet<>();
 		for (Row row : tileRows) {
 			for (Tile tile : row) {
-				if (Math.abs(tile.coord.c - from.coord.c) <= radius
-						&& Math.abs(tile.coord.r - from.coord.r) <= radius) {
+				if (Math.abs(tile.coord.c - from.coord.c) + Math.abs(tile.coord.r - from.coord.r) <= radius) {
 					adjacent.add(tile);
 				}
 			}
