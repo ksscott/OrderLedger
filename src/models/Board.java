@@ -105,7 +105,9 @@ public class Board implements Drawable {
 	private void spawn(Player player, int index) {
 		Tile tile = spawnTile(player);
 		if (tile != null) {
-			tile.put(new Unit(player, index));
+			Unit unit = new Unit(player, index);
+			tile.put(unit);
+			orders.removeAll(unit);
 		}
 	}
 	
@@ -141,7 +143,7 @@ public class Board implements Drawable {
 	}
 	
 	/** Units move around the board */
-	private void moveAll() {
+	private void moveAll() { // There's a bug in here somewhere
 		List<Unit> allUnits = new ArrayList<>(allUnits());
 		Collections.sort(allUnits); // priority is important
 		Map<Unit,Order> allOrders =  unitOrders(allUnits);
@@ -467,6 +469,12 @@ public class Board implements Drawable {
 			get(unit.player).remove(unit, order, coord);
 		}
 		
+		public void removeAll(Unit unit) {
+			OrderField orders = playerOrders.get(unit.player);
+			orders.removeAll(unit);
+			
+		}
+		
 		public void turn() { playerOrders.values().forEach(of -> of.turn()); }
 	}
 
@@ -497,6 +505,13 @@ public class Board implements Drawable {
 		public void remove(Unit unit, Order order, Coordinate coord) {
 			Map<Unit,Order> orders = region(coord.r, isTop(unit.player));
 			orders.remove(unit, order);
+		}
+		
+		public void removeAll(Unit unit) {
+			pending.remove(unit);
+			near.remove(unit);
+			middle.remove(unit);
+			far.remove(unit);
 		}
 		
 		public void turn() {
