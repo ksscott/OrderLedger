@@ -424,7 +424,7 @@ public class Board implements Drawable {
 			for (Tile tile : row) {
 				builder.append(tile.draw());
 			}
-			builder.append("   | ");
+			builder.append("  | ");
 			if (i % 3 == 1) {
 				builder.append(orders.get(bottom).draw(row.get(0).coord, false));
 			} else {
@@ -433,8 +433,8 @@ public class Board implements Drawable {
 			builder.append("\n");
 			appendSpaces(builder, 9);
 			builder.append(" | ");
-			appendSpaces(builder, 20);
-			builder.append("   | ");
+			appendSpaces(builder, 4*width);
+			builder.append("  | ");
 			appendSpaces(builder, 9);
 		}
 		return builder.toString();
