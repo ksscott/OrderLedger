@@ -103,6 +103,8 @@ public abstract class Game implements Drawable {
 		for (Configuration config : Configuration.values()) {
 			builder.append(config.name().toLowerCase() + " ");
 		}
+		builder.append("\n");
+		builder.append("Example:\n" + "missiles left right");
 		return builder.toString();
 	}
 	

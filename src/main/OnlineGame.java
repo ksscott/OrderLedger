@@ -59,6 +59,7 @@ public class OnlineGame extends Game {
 		String myOrders = scanner.nextLine().trim();
 		if (myOrders.toLowerCase().equals("help")) {
 			output.accept(orderList());
+			output.accept("\n" + "Enter orders: ");
 			myOrders = scanner.nextLine().trim();
 		}
 		if (shouldQuit(myOrders)) {

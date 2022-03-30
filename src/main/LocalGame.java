@@ -29,6 +29,7 @@ public class LocalGame extends Game {
 		String topOrders = scanner.nextLine().trim();
 		if (topOrders.toLowerCase().equals("help")) {
 			output.accept(orderList());
+			output.accept("\n" + top.name + "'s orders: ");
 			topOrders = scanner.nextLine().trim();
 		}
 		if (shouldQuit(topOrders)) { return false; }
@@ -36,6 +37,7 @@ public class LocalGame extends Game {
 		String bottomOrders = scanner.nextLine().trim();
 		if (bottomOrders.toLowerCase().equals("help")) {
 			output.accept(orderList());
+			output.accept("\n" + bottom.name + "'s orders: ");
 			bottomOrders = scanner.nextLine().trim();
 		}
 		if (shouldQuit(bottomOrders)) { return false; }
