@@ -107,7 +107,7 @@ public class Board implements Drawable {
 		if (tile != null) {
 			Unit unit = new Unit(player, index);
 			tile.put(unit);
-			orders.removeAll(unit);
+//			orders.removeAll(unit);
 		}
 	}
 	
@@ -137,7 +137,7 @@ public class Board implements Drawable {
 			Order order = allOrders.get(unit);
 			if (order instanceof Reconfigure) {
 				unit.order(allOrders.get(unit));
-//				orders.remove(unit, order, locate(unit).coord);
+				orders.remove(unit, order, locate(unit).coord);
 			}
 		}
 	}
@@ -150,12 +150,12 @@ public class Board implements Drawable {
 		Map<Unit,List<Coordinate>> unitPaths = unitPaths(allOrders);
 		
 		// remove orders from field
-//		for (Unit unit : allOrders.keySet()) {
-//			Order order = allOrders.get(unit);
-//			if (order instanceof Move) {
-//				orders.remove(unit, order, locate(unit).coord);
-//			}
-//		}
+		for (Unit unit : allOrders.keySet()) {
+			Order order = allOrders.get(unit);
+			if (order instanceof Move) {
+				orders.remove(unit, order, locate(unit).coord);
+			}
+		}
 		
 		// iteratively move all units
 		boolean changes = false;
