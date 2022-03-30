@@ -29,7 +29,7 @@ public class Board implements Drawable {
 		this.top = top;
 		this.bottom = bottom;
 		this.orders = new OrderFields(top, bottom);
-		initTiles(9, 5);
+		initTiles(9, 6);
 		respawnAll(top);
 		respawnAll(bottom);
 	}
