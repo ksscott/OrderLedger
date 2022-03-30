@@ -137,7 +137,7 @@ public class Board implements Drawable {
 			Order order = allOrders.get(unit);
 			if (order instanceof Reconfigure) {
 				unit.order(allOrders.get(unit));
-				orders.remove(unit, order, locate(unit).coord);
+//				orders.remove(unit, order, locate(unit).coord);
 			}
 		}
 	}
@@ -150,12 +150,12 @@ public class Board implements Drawable {
 		Map<Unit,List<Coordinate>> unitPaths = unitPaths(allOrders);
 		
 		// remove orders from field
-		for (Unit unit : allOrders.keySet()) {
-			Order order = allOrders.get(unit);
-			if (order instanceof Move) {
-				orders.remove(unit, order, locate(unit).coord);
-			}
-		}
+//		for (Unit unit : allOrders.keySet()) {
+//			Order order = allOrders.get(unit);
+//			if (order instanceof Move) {
+//				orders.remove(unit, order, locate(unit).coord);
+//			}
+//		}
 		
 		// iteratively move all units
 		boolean changes = false;
@@ -347,6 +347,7 @@ public class Board implements Drawable {
 				if (canSee.size() == 1 && !hasShot.contains(shooter)) {
 					hasShot.add(shooter);
 					dead.addAll(canSee);
+					System.out.println(shooter.draw() + " killed " + canSee);
 				}
 			}
 			// Can be shot by only one shooter:
@@ -357,6 +358,7 @@ public class Board implements Drawable {
 						if (!hasShot.contains(shooter) && targetable.get(shooter).contains(target)) {
 							hasShot.add(shooter);
 							dead.add(target);
+							System.out.println(shooter.draw() + " killed " + target);
 						}
 					}
 				}
@@ -368,6 +370,7 @@ public class Board implements Drawable {
 					if (!dead.contains(target)) {
 						hasShot.add(shooter);
 						dead.add(target);
+						System.out.println(shooter.draw() + " killed " + target);
 					}
 				}
 			}
