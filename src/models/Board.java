@@ -347,7 +347,7 @@ public class Board implements Drawable {
 				if (canSee.size() == 1 && !hasShot.contains(shooter)) {
 					hasShot.add(shooter);
 					dead.addAll(canSee);
-					System.out.println(shooter.draw() + " killed " + canSee);
+					System.out.println(shooter.draw() + " killed " + canSee.stream().findAny().get().draw());
 				}
 			}
 			// Can be shot by only one shooter:
@@ -358,7 +358,7 @@ public class Board implements Drawable {
 						if (!hasShot.contains(shooter) && targetable.get(shooter).contains(target)) {
 							hasShot.add(shooter);
 							dead.add(target);
-							System.out.println(shooter.draw() + " killed " + target);
+							System.out.println(shooter.draw() + " killed " + target.draw());
 						}
 					}
 				}
@@ -370,7 +370,7 @@ public class Board implements Drawable {
 					if (!dead.contains(target)) {
 						hasShot.add(shooter);
 						dead.add(target);
-						System.out.println(shooter.draw() + " killed " + target);
+						System.out.println(shooter.draw() + " killed " + target.draw());
 					}
 				}
 			}
