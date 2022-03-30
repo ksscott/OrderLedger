@@ -53,15 +53,17 @@ public abstract class Server {
 		// TODO handle edge cases, e.g. if data backs up
 	}
 	
-	private synchronized String readUserInput() {
-		String nextInput = userInputs.poll();
+	private String readUserInput() {
+		String nextInput = null;
 		while (nextInput == null) {
+			synchronized(this) {
+				nextInput = userInputs.poll();
+			}
 			try {
 				Thread.sleep(POLL_INTERVAL_MILLIS);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			nextInput = userInputs.poll();
 		}
 		return nextInput;
 		// TODO handle edge cases, e.g. if inputs back up
