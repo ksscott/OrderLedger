@@ -170,10 +170,9 @@ public class Board implements Drawable {
 				// attempt to move 1 along the path
 				// (fail if bump into walls or same-player unit)
 				if (oneAhead == null) {
-					break; // off board, stop
+					continue; // off board, stop
 				} else if (!oneAhead.isEmpty() && !oneAhead.equals(from)) {
-					System.out.println("Tile occupied: " + oneAhead.coord);
-					break;  // tile occupied
+					continue; // tile occupied
 				} else {
 					move(unit, from, oneAhead); // step forward
 					path.remove(0);
