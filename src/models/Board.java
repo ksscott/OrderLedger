@@ -18,26 +18,25 @@ public class Board implements Drawable {
 	
 	private static final int UNITS_PER_PLAYER = 3;
 	
-	private int length;
-	private int width;
+	public final int length;
+	public final int width;
 	private List<Row> tileRows;
-	private Player top; // player one
-	private Player bottom; // player two
+	public Player top; // player one
+	public Player bottom; // player two
 	private OrderFields orders;
 	
 	public Board(Player top, Player bottom) {
+		this.length = 9;
+		this.width = 6;
 		this.top = top;
 		this.bottom = bottom;
 		this.orders = new OrderFields(top, bottom);
-		initTiles(9, 6);
+		initTiles();
 		respawnAll(top);
 		respawnAll(bottom);
 	}
 	
-	private void initTiles(int rows, int columns) {
-		this.length = rows;
-		this.width = columns;
-		
+	private void initTiles() {
 		tileRows = new ArrayList<>();
 		for (int r = 0; r < length; r++) {
 			Row row = new Row();
@@ -259,6 +258,10 @@ public class Board implements Drawable {
 		return null;
 	}
 	
+	public Coordinate coord(Unit unit) {
+		return locate(unit).coord;
+	}
+	
 	private Tile tile(Coordinate coord) {
 		if (coord.r < 0 || coord.r >= tileRows.size()
 				|| coord.c < 0 || coord.c >= this.width) {
@@ -277,7 +280,7 @@ public class Board implements Drawable {
 			.collect(Collectors.toSet());
 	}
 	
-	private Set<Unit> allUnits() { return allUnits(unit -> true); }
+	public Set<Unit> allUnits() { return allUnits(unit -> true); }
 	
 	private Set<Unit> playerUnits(Player player) { return allUnits(u -> u.player.equals(player)); }
 	
