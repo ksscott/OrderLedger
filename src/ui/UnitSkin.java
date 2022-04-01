@@ -3,6 +3,7 @@ package ui;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.File;
@@ -10,6 +11,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import models.Tile.Coordinate;
 import models.Unit;
 
 public class UnitSkin {
@@ -17,11 +19,11 @@ public class UnitSkin {
 	Unit unit;
 	
 	private BufferedImage image;
-	private Point pos;
+	private Coordinate coord;
 
-	public UnitSkin(Unit unit, Point point) {
+	public UnitSkin(Unit unit, Coordinate location) {
 		this.unit = unit;
-		pos = point;
+		coord = location;
 		
 		loadImage();
 	}
@@ -58,14 +60,27 @@ public class UnitSkin {
 	public void draw(Graphics g, ImageObserver observer) {
 		boolean top = unit.player.playerIndex == 1;
 		int flip = top ? -1 : 1;
-		int size = BoardSkin.TILE_SIZE;
+		Image toDraw = image.getScaledInstance(BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE, Image.SCALE_SMOOTH);
 		
+		Rectangle area = area();
+		g.drawImage(toDraw, 
+				area.x + (top ? area.width : 0), 
+				area.y + (top ? area.height : 0), 
+				flip*area.width, 
+				flip*area.height, observer);
+	}
+	
+	public Rectangle area() {
+		return new Rectangle(location().x, location().y, BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE);
+	}
+	
+	private Point location() {
+		int size = BoardSkin.TILE_SIZE;
 		int xOffset = BoardSkin.ORDERS_WIDTH; // left OrderField // FIXME shouldn't be hard coded here
 		int yOffset = 1 * size; // top Player name // FIXME shouldn't be hard coded here
 		
-		Image toDraw = image.getScaledInstance(size, size, Image.SCALE_SMOOTH);
-		int x = (pos.x * size) + xOffset + (top ? size : 0);
-		int y = (pos.y * size) + yOffset + (top ? size : 0);
-		g.drawImage(toDraw, x, y, flip*size, flip*size, observer);
+		int x = (coord.c * size) + xOffset;
+		int y = (coord.r * size) + yOffset;
+		return new Point(x, y);
 	}
 }

@@ -16,6 +16,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.swing.JPanel;
@@ -46,14 +47,17 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	Rectangle boardBox;
 	Rectangle topPlayerBox;
 	Rectangle bottomPlayerBox;
-	Rectangle leftOrdersBox;
-	Rectangle rightOrdersBox;
+	Rectangle leftOrdersBox; // does not include pending orders
+	Rectangle rightOrdersBox; // does not include pending orders
 	
 	private Player me;
+	private Player winner;
 	private UnitSkin selectedUnit;
+	private Set<UnitSkin> drawnUnits;
 	
 	public BoardSkin(Board board) {
 		this.board = board;
+		this.me = board.bottom; // FIXME
 		this.boardWidth = board.width * TILE_SIZE;
 		this.boardLength = board.length * TILE_SIZE;
 		
@@ -62,6 +66,8 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		boardBox = new Rectangle(right(leftOrdersBox), bottom(topPlayerBox), boardWidth, boardLength);
 		rightOrdersBox = new Rectangle(right(boardBox), bottom(topPlayerBox), ORDERS_WIDTH, boardLength);
 		bottomPlayerBox = new Rectangle(ORDERS_WIDTH, bottom(boardBox), boardWidth, TILE_SIZE);
+		
+		drawnUnits = new HashSet<>();
 		
 		setPreferredSize(new Dimension(right(rightOrdersBox), bottom(bottomPlayerBox)));
 		setBackground(BACKGROUND);
@@ -74,7 +80,15 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	}
 	
 	@Override
-	public void keyTyped(KeyEvent e) {
+	public void keyTyped(KeyEvent e) {}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (winner != null) { return; }
+		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			endTurn();
+			return;
+		}
 		if (selectedUnit == null) { return; }
 		
 		Order order = null;
@@ -104,39 +118,42 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 			order = new Move(Move.Direction.RIGHT);
 			break;
 		default:
-			break;
+			return;
 		}
 		
+		System.out.println("Issuing order " + order.draw() + " to unit " + selectedUnit.unit.draw());
 		board.issueOrder(selectedUnit.unit, order);
+		selectedUnit = null;
+		repaint();
 	}
-
-	@Override
-	public void keyPressed(KeyEvent e) {}
 
 	@Override
 	public void keyReleased(KeyEvent e) {}
 
 	@Override
-	public void mouseClicked(MouseEvent e) {
+	public void mouseClicked(MouseEvent e) {}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		if (winner != null) { return; }
 		switch(e.getButton()) {
 		default:
 		case 1: // left click to select ship
 			UnitSkin clicked = atLoc(e.getPoint());
-			if (clicked != null && clicked.unit.player.equals(me)) {
+			if (clicked != null/* && clicked.unit.player.equals(me)*/) {
 				selectedUnit = clicked;
+				System.out.println("Selected a unit: " + selectedUnit.unit.draw());
 			} else {
 				selectedUnit = null;
 			}
 			break;
-		case 2: // right click to give a move order
-			if (selectedUnit == null) { return; }
+		case 2: // right click to give a move order // FIXME this is my mouse wheel
+//			if (selectedUnit == null) { return; }
 //			Move order = new Move(Move.Direction.NONE); // FIXME click to give move orders
 //			board.issueOrder(selectedUnit.unit, order);
+			break;
 		}
 	}
-
-	@Override
-	public void mousePressed(MouseEvent e) {}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {}
@@ -155,18 +172,30 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		drawPlayers(g);
 		drawOrderFields(g);
 		
+		drawnUnits = new HashSet<>();
 		Set<Unit> allUnits = board.allUnits(); // TODO
 		for (Unit unit : allUnits) {
-			UnitSkin us = new UnitSkin(unit, point(board.coord(unit)));
+			UnitSkin us = new UnitSkin(unit, board.coord(unit));
 			us.draw(g, this);
+			drawnUnits.add(us);
 		}
 		
 		// apparently smooths animations on some systems
 		Toolkit.getDefaultToolkit().sync();
 	}
 	
+	private void endTurn() {
+		System.out.println("ENDING TURN");
+		winner = board.applyOrders();
+		repaint();
+	}
+	
 	private UnitSkin atLoc(Point point) {
-		return null; // TODO
+		return drawnUnits
+				.stream()
+				.filter(unit -> unit.area().contains(point))
+				.findAny()
+				.orElse(null);
 	}
 	
 	private void drawBackground(Graphics g) {
@@ -190,49 +219,65 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		g.fillRect((3 + board.width) * TILE_SIZE, (1+6) * TILE_SIZE, 3 * TILE_SIZE, 3 * TILE_SIZE); // bottom right
 		
 		// lines
-		Point topLeft = new Point(3 * TILE_SIZE, 1 * TILE_SIZE);
-		Point topRight = new Point((3 + board.width) * TILE_SIZE, 1 * TILE_SIZE);
-		Point bottomLeft = new Point(3 * TILE_SIZE, (1 + board.length) * TILE_SIZE);
-		Point bottomRight = new Point((3 + board.width) * TILE_SIZE, (1 + board.length) * TILE_SIZE);
+		int left = left(boardBox);
+		int right = right(boardBox);
+		int top = top(boardBox);
+		int bottom = bottom(boardBox);
 		
 		g.setColor(Color.BLACK);
-		g.drawLine(topLeft.x, topLeft.y, topRight.x, topRight.y); // top border
-		g.drawLine(bottomLeft.x, bottomLeft.y, bottomRight.x, bottomRight.y); // bottom border
-		g.drawLine(topLeft.x, topLeft.y, bottomLeft.x, bottomLeft.y); // left border
-		g.drawLine(topRight.x, topRight.y, bottomRight.x, bottomRight.y); // right border
+		g.drawLine(left, top, right, top); // top border
+		g.drawLine(left, bottom, right, bottom); // bottom border
+		g.drawLine(left, top, left, bottom); // left border
+		g.drawLine(right, top, right, bottom); // right border
 	}
 	
 	private void drawPlayers(Graphics g) {
-		drawText(g, board.top.name, NAMES_FONT, NAMES_COLOR, topPlayerBox);
-		drawText(g, board.bottom.name, NAMES_FONT, NAMES_COLOR, bottomPlayerBox);
+		String topName = board.top.name;
+		 if (winner == board.top) {
+			 topName += " - WINNER!";
+		 }
+		 String bottomName = board.bottom.name;
+		 if (winner == board.bottom) {
+			 bottomName += " - WINNER!";
+		 }
+		drawText(g, topName, NAMES_FONT, NAMES_COLOR, topPlayerBox);
+		drawText(g, bottomName, NAMES_FONT, NAMES_COLOR, bottomPlayerBox);
 	}
 	
 	private void drawOrderFields(Graphics g) {
 		int height = leftOrdersBox.height / 3;
 		
 		// Left Orders Field
+		String textTopPending = board.orders.get(board.top).drawPending();
+		Rectangle rectTopPending = new Rectangle(left(leftOrdersBox), 0, ORDERS_WIDTH, TILE_SIZE);
+		drawText(g, textTopPending, ORDERS_FONT, ORDERS_COLOR, rectTopPending);
+		
 		String textTopNear = board.orders.get(board.top).draw(new Coordinate(0,0), true);
 		Rectangle rectTopNear = new Rectangle(left(leftOrdersBox), top(leftOrdersBox), ORDERS_WIDTH, height);
 		drawText(g, textTopNear, ORDERS_FONT, ORDERS_COLOR, rectTopNear);
 		
-		String textTopMiddle = board.orders.get(board.top).draw(new Coordinate(0,board.length/2), true);
+		String textTopMiddle = board.orders.get(board.top).draw(new Coordinate(board.length/2,0), true);
 		Rectangle rectTopMiddle = new Rectangle(left(leftOrdersBox), top(leftOrdersBox) + height, ORDERS_WIDTH, height);
 		drawText(g, textTopMiddle, ORDERS_FONT, ORDERS_COLOR, rectTopMiddle);
 		
-		String textTopFar = board.orders.get(board.top).draw(new Coordinate(0,board.length), true);
+		String textTopFar = board.orders.get(board.top).draw(new Coordinate(board.length-1,0), true);
 		Rectangle rectTopFar = new Rectangle(left(leftOrdersBox), top(leftOrdersBox) + height*2, ORDERS_WIDTH, height);
 		drawText(g, textTopFar, ORDERS_FONT, ORDERS_COLOR, rectTopFar);
 		
 		// Right Orders Field
-		String textBottomNear = board.orders.get(board.top).draw(new Coordinate(0,board.length), false);
+		String textBottomPending = board.orders.get(board.bottom).drawPending();
+		Rectangle rectBottomPending = new Rectangle(left(rightOrdersBox), bottom(rightOrdersBox), ORDERS_WIDTH, TILE_SIZE);
+		drawText(g, textBottomPending, ORDERS_FONT, ORDERS_COLOR, rectBottomPending);
+		
+		String textBottomNear = board.orders.get(board.bottom).draw(new Coordinate(board.length-1,0), false);
 		Rectangle rectBottomNear = new Rectangle(left(rightOrdersBox), top(rightOrdersBox) + height*2, ORDERS_WIDTH, height);
 		drawText(g, textBottomNear, ORDERS_FONT, ORDERS_COLOR, rectBottomNear);
 		
-		String textBottomMiddle = board.orders.get(board.top).draw(new Coordinate(0,board.length/2), false);
+		String textBottomMiddle = board.orders.get(board.bottom).draw(new Coordinate(board.length/2,0), false);
 		Rectangle rectBottomMiddle = new Rectangle(left(rightOrdersBox), top(rightOrdersBox) + height, ORDERS_WIDTH, height);
 		drawText(g, textBottomMiddle, ORDERS_FONT, ORDERS_COLOR, rectBottomMiddle);
 		
-		String textBottomFar = board.orders.get(board.top).draw(new Coordinate(0,0), false);
+		String textBottomFar = board.orders.get(board.bottom).draw(new Coordinate(0,0), false);
 		Rectangle rectBottomFar = new Rectangle(left(rightOrdersBox), top(rightOrdersBox), ORDERS_WIDTH, height);
 		drawText(g, textBottomFar, ORDERS_FONT, ORDERS_COLOR, rectBottomFar);
 	}
