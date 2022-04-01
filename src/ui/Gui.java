@@ -1,13 +1,10 @@
 package ui;
 
-import java.awt.Point;
-
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import models.Board;
 import models.Player;
-import models.Tile.Coordinate;
 
 public class Gui {
 	
@@ -23,6 +20,7 @@ public class Gui {
 		BoardSkin boardSkin = new BoardSkin(board);
 		window.add(boardSkin);
 		window.addKeyListener(boardSkin);
+		window.addMouseListener(boardSkin);
 		
 		window.setResizable(false);
 		window.pack(); // pack after resize to avoid troubles of unspecified nature
@@ -30,15 +28,11 @@ public class Gui {
 		window.setVisible(true);
 	}
 	
-	public static void main(String[] args) {
+	public static void guiGame() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				initWindow();
 			}
 		});
-	}
-
-	static Point point(Coordinate coord) {
-		return new Point(coord.r, coord.c);
 	}
 }

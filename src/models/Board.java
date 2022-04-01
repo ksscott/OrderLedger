@@ -47,11 +47,15 @@ public class Board implements Drawable {
 		}
 	}
 	
+	public void issueOrder(Unit unit, Order order) {
+		this.orders.issueOrder(unit, order);
+	}
+	
 	public void issueOrders(Player player, List<Order> orders) {
 		for (Unit unit : playerUnits(player)) {
 			int idx = unit.index - 1;
 			if (idx >= 0 && idx < orders.size()) {
-				this.orders.issueOrder(unit, orders.get(idx));
+				issueOrder(unit, orders.get(idx));
 			}
 		}
 	}
@@ -453,7 +457,7 @@ public class Board implements Drawable {
 		return builder;
 	}
 	
-	private class OrderFields {
+	public class OrderFields {
 		Map<Player,OrderField> playerOrders;
 		
 		public OrderFields(Player topPlayer, Player bottomPlayer) {
@@ -483,7 +487,7 @@ public class Board implements Drawable {
 	}
 
 	/** A divided space containing Orders for Units */
-	private class OrderField {
+	public class OrderField {
 		private Map<Unit,Order> pending;
 		private Map<Unit,Order> near;
 		private Map<Unit,Order> middle;
