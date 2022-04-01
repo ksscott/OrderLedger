@@ -60,9 +60,12 @@ public class UnitSkin {
 		int flip = top ? -1 : 1;
 		int size = BoardSkin.TILE_SIZE;
 		
+		int xOffset = 3 * size; // left OrderField // FIXME shouldn't be hard coded here
+		int yOffset = 1 * size; // top Player name // FIXME shouldn't be hard coded here
+		
 		Image toDraw = image.getScaledInstance(BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE, Image.SCALE_SMOOTH);
-		int x = pos.x * size + (top ? size : 0);
-		int y = (pos.y+1) * size + (top ? size : 0);
+		int x = (pos.x * size) + xOffset + (top ? size : 0);
+		int y = (pos.y * size) + yOffset + (top ? size : 0);
 		g.drawImage(toDraw, x, y, flip*size, flip*size, observer);
 	}
 }

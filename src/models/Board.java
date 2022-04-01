@@ -23,7 +23,7 @@ public class Board implements Drawable {
 	private List<Row> tileRows;
 	public Player top; // player one
 	public Player bottom; // player two
-	private OrderFields orders;
+	public OrderFields orders;
 	
 	public Board(Player top, Player bottom) {
 		this.length = 9;

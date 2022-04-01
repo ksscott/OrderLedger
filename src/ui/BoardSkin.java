@@ -24,14 +24,14 @@ import models.Unit;
 
 public class BoardSkin extends JPanel implements ActionListener, KeyListener {
 	
-	public static final int TILE_SIZE = 55;
+	public static final int TILE_SIZE = 70;
 	
 	private Board board;
 	
 	public BoardSkin(Board board) {
 		this.board = board;
 		// length + 2 to draw player names:
-		setPreferredSize(new Dimension(TILE_SIZE * board.width, TILE_SIZE * (board.length+2)));
+		setPreferredSize(new Dimension(TILE_SIZE * (board.width+6), TILE_SIZE * (board.length+2)));
 		setBackground(new Color(232, 232, 232));
 	}
 
@@ -65,6 +65,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener {
 		
 		drawBackground(g);
 		drawPlayers(g);
+		drawOrderFields(g);
 		
 		Set<Unit> allUnits = board.allUnits(); // TODO
 		for (Unit unit : allUnits) {
@@ -78,38 +79,74 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener {
 	
 	private void drawBackground(Graphics g) {
 		g.setColor(new Color(214, 214, 214));
+		// paint checkered board
 		for (int row = 0; row < board.length; row++) {
 			for (int col = 0; col < board.width; col++) {
 				// color every other tile
 				if ((row + col) % 2 == 1) {
-					// row+1 because of TopPlayer name
-					g.fillRect(col * TILE_SIZE, (row+1) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+					int xOffset = 3; // because of OrderField
+					int yOffset = 1; // because of TopPlayer name
+					g.fillRect((col+xOffset) * TILE_SIZE, (row+yOffset) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 				}
 			}
 		}
+		
+		// paint OrderFields
+		g.fillRect(0, 1 * TILE_SIZE, 3 * TILE_SIZE, 3 * TILE_SIZE); // top left
+		g.fillRect(0, (1+6) * TILE_SIZE, 3 * TILE_SIZE, 3 * TILE_SIZE); // bottom left
+		g.fillRect((3 + board.width) * TILE_SIZE, 1 * TILE_SIZE, 3 * TILE_SIZE, 3 * TILE_SIZE); // top right
+		g.fillRect((3 + board.width) * TILE_SIZE, (1+6) * TILE_SIZE, 3 * TILE_SIZE, 3 * TILE_SIZE); // bottom right
+		
+		// lines
+		Point topLeft = new Point(3 * TILE_SIZE, 1 * TILE_SIZE);
+		Point topRight = new Point((3 + board.width) * TILE_SIZE, 1 * TILE_SIZE);
+		Point bottomLeft = new Point(3 * TILE_SIZE, (1 + board.length) * TILE_SIZE);
+		Point bottomRight = new Point((3 + board.width) * TILE_SIZE, (1 + board.length) * TILE_SIZE);
+		
+		g.setColor(Color.BLACK);
+		g.drawLine(topLeft.x, topLeft.y, topRight.x, topRight.y); // top border
+		g.drawLine(bottomLeft.x, bottomLeft.y, bottomRight.x, bottomRight.y); // bottom border
+		g.drawLine(topLeft.x, topLeft.y, bottomLeft.x, bottomLeft.y); // left border
+		g.drawLine(topRight.x, topRight.y, bottomRight.x, bottomRight.y); // right border
 	}
 	
 	private void drawPlayers(Graphics g) {
-		String topPlayer = board.top.name;
-		String bottomPlayer = board.bottom.name;
+		Rectangle rectTop = new Rectangle(3 * TILE_SIZE, 0, TILE_SIZE * board.width, TILE_SIZE);
+		drawText(g, board.top.name, new Font("Lato", Font.BOLD, 25), new Color(30, 201, 139), rectTop);
 		
+		Rectangle rectBottom = new Rectangle(3 * TILE_SIZE, TILE_SIZE * (board.length+1), TILE_SIZE * board.width, TILE_SIZE);
+		drawText(g, board.bottom.name, new Font("Lato", Font.BOLD, 25), new Color(30, 201, 139), rectBottom);
+	}
+	
+	private void drawOrderFields(Graphics g) {
+		// TODO
+		Rectangle rectTopNear = new Rectangle();
+		// drawText();
+		Rectangle rectTopMiddle = new Rectangle();
+		// drawText();
+		Rectangle rectTopFar = new Rectangle();
+		// drawText();
+		
+		Rectangle rectBottomNear = new Rectangle();
+		// drawText();
+		Rectangle rectBottomMiddle = new Rectangle();
+		// drawText();
+		Rectangle rectBottomFar = new Rectangle();
+		// drawText();
+	}
+	
+	private void drawText(Graphics g, String text, Font font, Color color, Rectangle container) {
 		Graphics2D g2d = (Graphics2D) g;
 		g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		g2d.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-		g2d.setColor(new Color(30, 201, 139));
-		g2d.setFont(new Font("Lato", Font.BOLD, 25));
+		g2d.setColor(color);
+		g2d.setFont(font);
 		FontMetrics metrics = g2d.getFontMetrics(g2d.getFont());
 		
-		Rectangle rectTop = new Rectangle(0, 0, TILE_SIZE * board.width, TILE_SIZE);
-		int xTop = rectTop.x + (rectTop.width - metrics.stringWidth(topPlayer)) / 2;
-		int yTop = rectTop.y + ((rectTop.height - metrics.getHeight()) / 2) + metrics.getAscent();
-		g2d.drawString(topPlayer, xTop, yTop);
-		
-		Rectangle rectBottom = new Rectangle(0, TILE_SIZE * (board.length+1), TILE_SIZE * board.width, TILE_SIZE);
-		int xBottom = rectBottom.x + (rectBottom.width - metrics.stringWidth(bottomPlayer)) / 2;
-		int yBottom = rectBottom.y + ((rectBottom.height - metrics.getHeight()) / 2) + metrics.getAscent();
-		g2d.drawString(bottomPlayer, xBottom, yBottom);
+		int x = container.x + (container.width - metrics.stringWidth(text)) / 2;
+		int y = container.y + ((container.height - metrics.getHeight()) / 2) + metrics.getAscent();
+		g2d.drawString(text, x, y);
 	}
 	
 	private static Point point(Coordinate coord) {
