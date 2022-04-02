@@ -50,6 +50,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	Rectangle leftOrdersBox; // does not include pending orders
 	Rectangle rightOrdersBox; // does not include pending orders
 	
+	private boolean local;
 	private Player me;
 	private Player winner;
 	private UnitSkin selectedUnit;
@@ -84,6 +85,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 
 	@Override
 	public void keyPressed(KeyEvent e) {
+//		System.out.println("Key Pressed: " + e.getKeyCode());
 		if (winner != null) { return; }
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 			endTurn();
@@ -140,7 +142,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		default:
 		case 1: // left click to select ship
 			UnitSkin clicked = atLoc(e.getPoint());
-			if (clicked != null/* && clicked.unit.player.equals(me)*/) {
+			if (clicked != null && (local || clicked.unit.player.equals(me))) {
 				selectedUnit = clicked;
 				System.out.println("Selected a unit: " + selectedUnit.unit.draw());
 			} else {
