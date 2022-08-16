@@ -63,21 +63,25 @@ public class UnitSkin {
 		Image toDraw = image.getScaledInstance(BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE, Image.SCALE_SMOOTH);
 		
 		Rectangle area = area();
-		g.drawImage(toDraw, 
-				area.x + (top ? area.width : 0), 
-				area.y + (top ? area.height : 0), 
-				flip*area.width, 
-				flip*area.height, observer);
+		int x = area.x + (top ? area.width : 0);
+		int y = area.y + (top ? area.height : 0);
+		y -= BoardSkin.WEIRD_TOP_BORDER; // double-weird
+		int width = flip*area.width;
+		int height = flip*area.height;
+		
+		g.drawImage(toDraw, x, y, width, height, observer);
 	}
 	
 	public Rectangle area() {
-		return new Rectangle(location().x, location().y, BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE);
+		Point location = location();
+		return new Rectangle(location.x, location.y, BoardSkin.TILE_SIZE, BoardSkin.TILE_SIZE);
 	}
 	
 	private Point location() {
 		int size = BoardSkin.TILE_SIZE;
 		int xOffset = BoardSkin.ORDERS_WIDTH; // left OrderField // FIXME shouldn't be hard coded here
 		int yOffset = 1 * size; // top Player name // FIXME shouldn't be hard coded here
+		yOffset += BoardSkin.WEIRD_TOP_BORDER; // weird
 		
 		int x = (coord.c * size) + xOffset;
 		int y = (coord.r * size) + yOffset;

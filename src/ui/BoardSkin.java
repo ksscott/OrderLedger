@@ -34,6 +34,8 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	
 	public static final int TILE_SIZE = 70;
 	public static final int ORDERS_WIDTH = 3 * TILE_SIZE;
+	// for some reason, the very top of the window seems to be 30 instead of 0
+	public static final int WEIRD_TOP_BORDER = 30;
 	
 	public static final Color BACKGROUND = new Color(232, 232, 232);
 	public static final Color NAMES_COLOR = new Color(30, 201, 139);
@@ -56,8 +58,9 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	private UnitSkin selectedUnit;
 	private Set<UnitSkin> drawnUnits;
 	
-	public BoardSkin(Board board) {
+	public BoardSkin(Board board, boolean local) {
 		this.board = board;
+		this.local = local;
 		this.me = board.bottom; // FIXME
 		this.boardWidth = board.width * TILE_SIZE;
 		this.boardLength = board.length * TILE_SIZE;
@@ -85,6 +88,8 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 
 	@Override
 	public void keyPressed(KeyEvent e) {
+		// FIXME for some reason, you must leave and refocus on 
+		/// the game window or else it won't receive key presses
 //		System.out.println("Key Pressed: " + e.getKeyCode());
 		if (winner != null) { return; }
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {

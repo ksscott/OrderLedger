@@ -82,7 +82,7 @@ public class Gui {
 		}
 		
 		Board board = new Board(top, bottom);
-		BoardSkin boardSkin = new BoardSkin(board);
+		BoardSkin boardSkin = new BoardSkin(board, !online);
 		window.add(boardSkin);
 		window.addKeyListener(boardSkin);
 		window.addMouseListener(boardSkin);
