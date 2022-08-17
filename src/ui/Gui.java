@@ -133,14 +133,14 @@ public class Gui {
 			Label topPlayerLabel = new Label("Top player name:");
 			topPlayerLabel.setBounds(50,20, 150,30);
 			this.add(topPlayerLabel);
-			TextField topNameField = new TextField();
+			TextField topNameField = new TextField("", 15);
 			topNameField.setBounds(50,50, 150,30);
 			this.add(topNameField);
 			
 			Label bottomPlayerLabel = new Label("Bottom player name:");
 			bottomPlayerLabel.setBounds(50,120, 150,30);
 			this.add(bottomPlayerLabel);
-			TextField bottomNameField = new TextField();
+			TextField bottomNameField = new TextField("", 15);
 			bottomNameField.setBounds(50,150, 150,30);
 			this.add(bottomNameField);
 			
@@ -167,13 +167,13 @@ public class Gui {
 			Label nameLabel = new Label("Player name:");
 			nameLabel.setBounds(50,20, 150,30);
 			this.add(nameLabel);
-			TextField nameField = new TextField();
+			TextField nameField = new TextField("", 15);
 			nameField.setBounds(50,50, 150,30);
 			this.add(nameField);
 			
 			Label ipLabel = new Label("Enter host IP address:");
 			ipLabel.setBounds(50,120, 150,30);
-			TextField ipField = new TextField();
+			TextField ipField = new TextField("", 10);
 			ipField.setBounds(50,150, 150,30);
 			if (!hosting) {
 				this.add(ipLabel);
