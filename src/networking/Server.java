@@ -155,7 +155,7 @@ public abstract class Server {
 //	}
 //	
 //	void send() {
-//		String ip = "192.168.1.1";
+//		String ip = "192.168.1.1"; // 127.0.0.1 in my current debugging
 //		try {
 //			Socket s = new Socket(ip, PORT);
 //			DataOutputStream dos = new DataOutputStream(s.getOutputStream());

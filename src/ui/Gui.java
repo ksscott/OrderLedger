@@ -76,7 +76,7 @@ public class Gui {
 				// FIXME allow user to quit while waiting for other user
 			}
 			
-			top = new Player(theirName, 2); // FIXME index?
+			top = new Player(theirName, 1); // FIXME index?
 		} else { // local
 			
 		}
