@@ -74,6 +74,16 @@ public class Board implements Drawable {
 
 		return hasWon();
 	}
+	
+	public List<Order> getOrders(Player player) {
+		Set<Unit> units = playerUnits(player);
+		OrderField playerOrders = orders.get(player);
+		
+		return units.stream()
+				.sorted()
+				.map(u -> playerOrders.get(u, locate(u).coord))
+				.collect(Collectors.toList());
+	}
 
 	public Player hasWon() {
 		boolean bottomHasWon = tileRows.get(0).stream().flatMap(tile -> tile.units().stream())

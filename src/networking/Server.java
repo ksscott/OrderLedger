@@ -23,6 +23,7 @@ public abstract class Server {
 	public static final int PORT = 6666;
 	public static final int POLL_INTERVAL_MILLIS = 500;
 	public static final String QUIT_STRING = "The Quit String - I don't know what you expected";
+	public static final String NO_COMMANDS = "Using this to indicate that the server handshake yielded no string";
 	
 	public Server(String playerName) {
 		this.playerName = playerName;
@@ -42,22 +43,40 @@ public abstract class Server {
 		thread.requestStop();
 	}
 	
+	/** Game gives input for the server to send */
 	public synchronized void addUserInput(String input) {
 		userInputs.add(input);
 		// TODO handle edge cases, e.g. if inputs back up
 	}
 	
-	/** @return oldest message from server, or else null */
-	public synchronized String pollDataFromServer() {
-		return receivedData.poll();
+	/** Server gives game the data it received */
+	private synchronized void writeDataFromServer(String data) {
+		receivedData.add(data);
 		// TODO handle edge cases, e.g. if data backs up
 	}
 	
+	/**
+	 * Game receives data from server
+	 *  
+	 * @return oldest message from server, or else null
+	 */
+	public String pollDataFromServer() {
+		return readNextItem(receivedData);
+		// TODO handle edge cases, e.g. if data backs up
+	}
+	
+	/** Server receives input from game */
 	private String readUserInput() {
-		String nextInput = null;
-		while (nextInput == null) {
+		return readNextItem(userInputs);
+		// TODO handle edge cases, e.g. if inputs back up
+	}
+	
+	/* Sit and wait forever until an item exists in the given queue */
+	private <T> T readNextItem(Queue<T> q) {
+		T nextItem = null;
+		while (nextItem == null) {
 			synchronized(this) {
-				nextInput = userInputs.poll();
+				nextItem = q.poll();
 			}
 			try {
 				Thread.sleep(POLL_INTERVAL_MILLIS);
@@ -65,14 +84,9 @@ public abstract class Server {
 				e.printStackTrace();
 			}
 		}
-		return nextInput;
-		// TODO handle edge cases, e.g. if inputs back up
+		return nextItem;
 	}
 	
-	private synchronized void writeDataFromServer(String data) {
-		receivedData.add(data);
-		// TODO handle edge cases, e.g. if data backs up
-	}
 	
 	public class NetworkingThread extends Thread {
 		
@@ -95,10 +109,10 @@ public abstract class Server {
 						break;
 					}
 					
+					// I'm guessing this will lock this thread until the other server responds
 					String received = sendAndReceive(toSend, isHost);
-					if (received != null) {
-						writeDataFromServer(received);
-					}
+					if (received == null) { received = NO_COMMANDS; }
+					writeDataFromServer(received);
 					if (QUIT_STRING.equals(received)) {
 						requestStop();
 						break;
@@ -114,6 +128,7 @@ public abstract class Server {
 			}
 		}
 		
+		// I'm guessing this will lock its thread until the other server responds
 		private final String sendAndReceive(String toSend, boolean isHost) throws IOException {
 			String received = null;
 			if (isHost) { // in case order matters

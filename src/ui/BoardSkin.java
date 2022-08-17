@@ -16,7 +16,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.swing.JPanel;
@@ -29,6 +31,8 @@ import models.Player;
 import models.Reconfigure;
 import models.Tile.Coordinate;
 import models.Unit;
+import models.Move.Direction;
+import networking.Server;
 
 public class BoardSkin extends JPanel implements ActionListener, KeyListener, MouseListener {
 	
@@ -52,15 +56,15 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	Rectangle leftOrdersBox; // does not include pending orders
 	Rectangle rightOrdersBox; // does not include pending orders
 	
-	private boolean local;
+	private Server server;
 	private Player me;
 	private Player winner;
 	private UnitSkin selectedUnit;
 	private Set<UnitSkin> drawnUnits;
 	
-	public BoardSkin(Board board, boolean local) {
+	public BoardSkin(Board board, Server server) {
 		this.board = board;
-		this.local = local;
+		this.server = server;
 		this.me = board.bottom; // FIXME
 		this.boardWidth = board.width * TILE_SIZE;
 		this.boardLength = board.length * TILE_SIZE;
@@ -147,7 +151,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		default:
 		case 1: // left click to select ship
 			UnitSkin clicked = atLoc(e.getPoint());
-			if (clicked != null && (local || clicked.unit.player.equals(me))) {
+			if (clicked != null && (server == null || clicked.unit.player.equals(me))) {
 				selectedUnit = clicked;
 				System.out.println("Selected a unit: " + selectedUnit.unit.draw());
 			} else {
@@ -193,8 +197,59 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	
 	private void endTurn() {
 		System.out.println("ENDING TURN");
+		
+		// send orders to other server:
+		List<Order> myOrders = board.getOrders(me);
+		server.addUserInput(encodeOrders(myOrders));
+		// get their orders from the server:
+		String theirOrders = server.pollDataFromServer();
+		board.issueOrders(board.top, decodeOrders(theirOrders));
+		
 		winner = board.applyOrders();
 		repaint();
+	}
+	
+	private static String encodeOrders(List<Order> orders) {
+		String encoded = "";
+		for (Order order : orders) {
+			encoded += encodeOrder(order);
+		}
+		return encoded;
+	}
+	
+	private static String encodeOrder(Order order) {
+		if (order instanceof Move) {
+			return ((Move) order).direction.name();
+		} else if (order instanceof Reconfigure) {
+			return ((Reconfigure) order).config.name();
+		}
+		return "unrecognized_order";
+	}
+	
+	// FIXME copied from Game.java
+	private static List<Order> decodeOrders(String input) {
+		List<Order> orders = new ArrayList<>();
+		String[] words = input.split("\\s+");
+		for (String word : words) {
+			orders.add(decode(word));
+		}
+		return orders;
+	}
+	
+	// FIXME copied from Game.java
+	private static Order decode(String input) {
+		String command = input.toUpperCase();
+		for (Direction dir : Direction.values()) {
+			if (command.equals(dir.name())) {
+				return new Move(dir);
+			}
+		}
+		for (Configuration config : Configuration.values()) {
+			if (command.equals(config.name())) {
+				return new Reconfigure(config);
+			}
+		}
+		return null;
 	}
 	
 	private UnitSkin atLoc(Point point) {
