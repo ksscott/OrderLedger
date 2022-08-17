@@ -205,6 +205,8 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		String theirOrders = server.pollDataFromServer();
 		board.issueOrders(board.top, decodeOrders(theirOrders));
 		
+		// FIXME something's broken when issuing the other player's orders...
+		
 		winner = board.applyOrders();
 		repaint();
 	}

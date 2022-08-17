@@ -8,10 +8,14 @@ public class Main {
 
 	public static void main(String[] args) {
 		if (args.length > 0 && args[0].toLowerCase().equals("gui")) {
-			Gui.guiGame();
+			guiGame();
 		} else {
 			consoleGame();
 		}
+	}
+	
+	private static void guiGame() {
+		Gui.guiGame();
 	}
 	
 	private static void consoleGame() {
