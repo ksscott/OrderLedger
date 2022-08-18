@@ -152,13 +152,7 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		switch(e.getButton()) {
 		default:
 		case 1: // left click to select ship
-			UnitSkin clicked = atLoc(e.getPoint());
-			if (clicked != null && (server == null || clicked.unit.player.equals(me))) {
-				selectedUnit = clicked;
-				System.out.println("Selected a unit: " + selectedUnit.unit.draw());
-			} else {
-				selectedUnit = null;
-			}
+			clickUnit(atLoc(e.getPoint()));
 			break;
 		case 2: // right click to give a move order // FIXME this is my mouse wheel
 //			if (selectedUnit == null) { return; }
@@ -197,21 +191,34 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		Toolkit.getDefaultToolkit().sync();
 	}
 	
+	private void clickUnit(UnitSkin clicked) {
+		if (clicked != null && (server == null || clicked.unit.player.equals(me))) {
+			selectUnit(clicked);
+			System.out.println("Selected a unit: " + selectedUnit.unit.draw());
+		} else {
+			selectUnit(null);
+		}
+	}
+	
+	private void selectUnit(UnitSkin selected) {
+		selectedUnit = selected;
+	}
+	
 	private void endTurn() {
 		System.out.println("ENDING TURN");
 		
-		// send orders to other server:
-		List<Order> myOrders = board.getOrders(me);
-		server.addUserInput(encodeOrders(myOrders));
-		// get their orders from the server:
-		String theirInput = server.pollDataFromServer();
-		List<Order> theirOrders = decodeOrders(theirInput);
-		for (Order order : theirOrders) {
-			order.mirror();
+		if (server != null) {
+			// send orders to other server:
+			List<Order> myOrders = board.getOrders(me);
+			server.addUserInput(encodeOrders(myOrders));
+			// get their orders from the server:
+			String theirInput = server.pollDataFromServer();
+			List<Order> theirOrders = decodeOrders(theirInput);
+			for (Order order : theirOrders) {
+				order.mirror();
+			}
+			board.issueOrders(board.top, theirOrders);
 		}
-		board.issueOrders(board.top, theirOrders);
-		
-		// FIXME something's broken when issuing the other player's orders...
 		
 		winner = board.applyOrders();
 		repaint();
