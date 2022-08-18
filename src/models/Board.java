@@ -81,7 +81,7 @@ public class Board implements Drawable {
 		
 		return units.stream()
 				.sorted()
-				.map(u -> playerOrders.get(u, locate(u).coord))
+				.map(u -> playerOrders.get(u, null))
 				.collect(Collectors.toList());
 	}
 
@@ -525,8 +525,14 @@ public class Board implements Drawable {
 			this.far = new HashMap<>();
 		}
 
+		/* null coord will give pending orders */
 		public Order get(Unit unit, Coordinate coord) {
-			Map<Unit, Order> orders = region(coord.r, isTop(unit.player));
+			Map<Unit, Order> orders;
+			if (coord != null) {
+				orders = region(coord.r, isTop(unit.player));
+			} else {
+				orders = pending;
+			}
 			return orders.get(unit);
 		}
 

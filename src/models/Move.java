@@ -1,7 +1,7 @@
 package models;
 
 public class Move implements Order {
-	public final Direction direction;
+	public Direction direction;
 	
 	public Move(Direction direction) {
 		this.direction = direction;
@@ -16,6 +16,24 @@ public class Move implements Order {
 		Direction(int deltaRow, int deltaColumn) {
 			this.r = deltaRow;
 			this.c = deltaColumn;
+		}
+		
+		public Direction mirror() {
+			switch (this) {
+			case UP:
+				return DOWN;
+			case DOWN:
+				return UP;
+			// DON'T flip left/right
+//			case LEFT:
+//				return RIGHT;
+//			case RIGHT:
+//				return LEFT;
+			case NONE:
+				return NONE;
+			default:
+				return this;
+			}
 		}
 		
 		@Override
@@ -39,4 +57,9 @@ public class Move implements Order {
 	
 	@Override
 	public String draw() { return direction.draw(); }
+	
+	@Override
+	public void mirror() {
+		this.direction = this.direction.mirror();
+	}
 }

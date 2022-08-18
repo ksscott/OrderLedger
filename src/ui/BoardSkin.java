@@ -17,9 +17,11 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.swing.JPanel;
 
@@ -202,8 +204,12 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 		List<Order> myOrders = board.getOrders(me);
 		server.addUserInput(encodeOrders(myOrders));
 		// get their orders from the server:
-		String theirOrders = server.pollDataFromServer();
-		board.issueOrders(board.top, decodeOrders(theirOrders));
+		String theirInput = server.pollDataFromServer();
+		List<Order> theirOrders = decodeOrders(theirInput);
+		for (Order order : theirOrders) {
+			order.mirror();
+		}
+		board.issueOrders(board.top, theirOrders);
 		
 		// FIXME something's broken when issuing the other player's orders...
 		
@@ -212,11 +218,9 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	}
 	
 	private static String encodeOrders(List<Order> orders) {
-		String encoded = "";
-		for (Order order : orders) {
-			encoded += encodeOrder(order);
-		}
-		return encoded;
+		return orders.stream()
+				.map(BoardSkin::encodeOrder)
+				.collect(Collectors.joining(" "));
 	}
 	
 	private static String encodeOrder(Order order) {
@@ -230,12 +234,10 @@ public class BoardSkin extends JPanel implements ActionListener, KeyListener, Mo
 	
 	// FIXME copied from Game.java
 	private static List<Order> decodeOrders(String input) {
-		List<Order> orders = new ArrayList<>();
-		String[] words = input.split("\\s+");
-		for (String word : words) {
-			orders.add(decode(word));
-		}
-		return orders;
+		return Arrays.stream(input.split("\\s+"))
+				.map(BoardSkin::decode)
+				.filter(u -> u != null)
+				.collect(Collectors.toList());
 	}
 	
 	// FIXME copied from Game.java
