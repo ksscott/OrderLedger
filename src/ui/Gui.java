@@ -156,6 +156,22 @@ public class Gui {
 				}
 			});
 			this.add(goButton);
+			
+			Button backButton = new Button("Back");
+			backButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					window.remove(LocalMenu.this);
+					Menu menu = new Menu();
+					window.add(menu);
+					
+					window.setResizable(false);
+					window.pack(); // pack after resize to avoid troubles of unspecified nature
+					window.setLocationRelativeTo(null); // center of screen
+					window.setVisible(true);
+				}
+			});
+			this.add(backButton);
 		}
 	}
 	
@@ -192,6 +208,22 @@ public class Gui {
 				}
 			});
 			this.add(goButton);
+			
+			Button backButton = new Button("Back");
+			backButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					window.remove(OnlineMenu.this);
+					Menu menu = new Menu();
+					window.add(menu);
+					
+					window.setResizable(false);
+					window.pack(); // pack after resize to avoid troubles of unspecified nature
+					window.setLocationRelativeTo(null); // center of screen
+					window.setVisible(true);
+				}
+			});
+			this.add(backButton);
 		}
 	}
 	
